@@ -2,7 +2,7 @@
 
 Run [Claude Code](https://docs.anthropic.com/en/docs/claude-code) from Neovim. Select code and describe a change to have it rewritten in place. Ask a question about the project and get the answers in the quickfix list. Hand off a multi-step task and read the summary in a split.
 
-![Visual replace: select a loop, ask for vim.tbl_map, undo with u](assets/demo.gif)
+![Visual replace: select a Go loop, ask for idiomatic Go, undo with u](assets/demo.gif)
 
 Herald is named after the Heralds of Galactus, who go out and do work on behalf of something much larger. Herald sends your request to the `claude` CLI and brings the result back into the buffer.
 

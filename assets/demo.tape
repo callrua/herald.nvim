@@ -16,26 +16,26 @@ Set Theme "Catppuccin Mocha"
 Set TypingSpeed 60ms
 
 Hide
-Type "nvim -u assets/demo/init.lua assets/demo/example.lua" Enter
+Type "nvim -i NONE -u assets/demo/init.lua assets/demo/example.go" Enter
 Sleep 1s
 Show
 
 Sleep 1s
-# Select the loop and the return statement (lines 5-9).
-Type "5G"
+# Select the function body (lines 10-16).
+Type "10G"
 Sleep 300ms
-Type "V4j"
+Type "V6j"
 Sleep 800ms
 Type " hv"
 Sleep 800ms
-Type "use vim.tbl_map"
+Type "make this idiomatic Go"
 Sleep 500ms
 Escape
 Sleep 300ms
 Type "w"
 
 # Wait for claude to reply and herald to replace the lines.
-Wait+Screen@60s /tbl_map\(function/
+Wait+Screen@60s /range users/
 Sleep 3s
 
 # Undo, then redo.
