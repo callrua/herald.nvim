@@ -50,7 +50,12 @@ assert_eq("resume: current_id", session.current_id(), "test-uuid-1234")
 assert_eq("resume: name preserved", session.current_info().name, "my test session")
 
 -- Resume nonexistent (should notify error, not crash)
+local notify = vim.notify
+local notified = false
+vim.notify = function() notified = true end
 session.resume("nonexistent")
+vim.notify = notify
+assert_eq("bad resume: notified", notified, true)
 -- current should remain unchanged
 assert_eq("bad resume: current unchanged", session.current_id(), "test-uuid-1234")
 
@@ -58,3 +63,4 @@ print(string.format("\n%d passed, %d failed", passed, failed))
 if failed > 0 then
   vim.cmd("cquit 1")
 end
+os.exit(failed > 0 and 1 or 0)

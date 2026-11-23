@@ -152,9 +152,10 @@ function M.attach(buf)
     end,
   }
 
-  -- Trigger completion on # and @
   vim.keymap.set("i", "#", "#<C-x><C-o>", { buffer = buf, noremap = true })
-  vim.keymap.set("i", "@", "@<C-x><C-o>", { buffer = buf, noremap = true })
+  if config.values.completion.files.enabled then
+    vim.keymap.set("i", "@", "@<C-x><C-o>", { buffer = buf, noremap = true })
+  end
 end
 
 --- Omnifunc implementation for the prompt buffer.
@@ -210,7 +211,7 @@ function M._omnifunc(findstart, base)
         })
       end
     end
-  elseif trigger == "@" then
+  elseif trigger == "@" and config.values.completion.files.enabled then
     local files = cmp.get_files()
     for _, f in ipairs(files) do
       if f:find(base, 1, true) or base == "" then

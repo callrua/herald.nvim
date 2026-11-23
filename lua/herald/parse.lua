@@ -65,4 +65,20 @@ function M.search_locations(text)
   return results
 end
 
+--- Give the first reply line the indent of the first selected line.
+--- The first line of a visual reply often comes back with its indent lost or wrong,
+--- while the following lines keep theirs.
+--- @param reply_lines string[]
+--- @param original_first_line string
+--- @return string[]
+function M.fix_first_indent(reply_lines, original_first_line)
+  if #reply_lines == 0 then
+    return reply_lines
+  end
+  local indent = original_first_line:match("^%s*")
+  local first = reply_lines[1]:gsub("^%s*", "")
+  reply_lines[1] = indent .. first
+  return reply_lines
+end
+
 return M
