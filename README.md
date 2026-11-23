@@ -33,6 +33,7 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 ```lua
 {
   "callrua/herald.nvim",
+  version = "*", -- latest release; remove to follow main
   dependencies = { "j-hui/fidget.nvim" }, -- optional
   config = function()
     local herald = require("herald")
