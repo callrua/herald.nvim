@@ -1,0 +1,229 @@
+*herald.txt*  Run Claude Code from Neovim
+
+Author:  Ruairi Callaghan
+License: MIT
+
+==============================================================================
+CONTENTS                                                     *herald-contents*
+
+  1. Introduction ............................. |herald-introduction|
+  2. Requirements ............................. |herald-requirements|
+  3. Setup .................................... |herald-setup|
+  4. Prompt window ............................ |herald-prompt|
+  5. Operations ............................... |herald-operations|
+  6. Commands ................................. |herald-commands|
+  7. Lua API .................................. |herald-api|
+  8. Configuration ............................ |herald-config|
+  9. Sessions ................................. |herald-sessions|
+ 10. Rules and files .......................... |herald-references|
+
+==============================================================================
+1. INTRODUCTION                                          *herald-introduction*
+
+Herald sends requests to the `claude` CLI and brings the results back into
+Neovim. It has three operations:
+
+  Visual replace   Rewrites the selected lines from a prompt.
+  Search           Fills the |quickfix| list with matching locations.
+  Agent            Runs a multi-step task and shows a summary in a split.
+
+==============================================================================
+2. REQUIREMENTS                                          *herald-requirements*
+
+- Neovim 0.10 or later.
+- The Claude Code CLI (`claude`) on your `PATH`, logged in.
+- Optional: fidget.nvim, for a spinner during search and agent tasks.
+
+Run `:checkhealth herald` to check these.
+
+==============================================================================
+3. SETUP                                                        *herald-setup*
+
+Call |herald.setup()| once, then map the operations: >lua
+
+  local herald = require("herald")
+  herald.setup({ model = "sonnet" })
+
+  vim.keymap.set("v", "<leader>hv", herald.visual)
+  vim.keymap.set("n", "<leader>hs", herald.search)
+  vim.keymap.set("n", "<leader>ha", herald.agent)
+  vim.keymap.set("n", "<leader>hx", herald.stop)
+<
+==============================================================================
+4. PROMPT WINDOW                                               *herald-prompt*
+
+Every operation opens a floating prompt window in insert mode.
+
+  `w`   Submit (normal mode). This is not `:w`.
+  `q`   Cancel (normal mode).
+  `#`   Complete a rule name (insert mode). See |herald-references|.
+  `@`   Complete a project file (insert mode). See |herald-references|.
+
+Because `w` submits, the `w` word motion does not work in the prompt window.
+Use `e`, `b`, or `W` instead.
+
+==============================================================================
+5. OPERATIONS                                              *herald-operations*
+
+VISUAL REPLACE                                                 *herald-visual*
+
+Sends the selected lines, 50 lines either side, and the file path. Claude has
+no tools. Herald replaces whole lines, even from a characterwise selection.
+Undo the change with |u|. A spinner shows above the selection while the
+request runs. Visual replace never uses or changes the session.
+
+SEARCH                                                         *herald-search*
+
+Claude can use `Read` and `Bash` limited to `grep`, `find`, `rg`, `git`, and
+`ls`. Herald asks for lines in this form and drops every other line: >
+
+  /abs/path:LINE:COL,COUNT,NOTES
+<
+If no line matches, Herald shows the first 500 characters of the raw reply
+instead of opening the quickfix window.
+
+AGENT                                                           *herald-agent*
+
+Claude can use every tool, under the `permission_mode` option. When the task
+finishes, a vertical split opens with Claude's summary and Herald shows the
+duration and cost.
+
+==============================================================================
+6. COMMANDS                                                  *herald-commands*
+
+:HeraldSearch                                                  *:HeraldSearch*
+    Open the prompt and run a search.
+
+:HeraldAgent [task]                                             *:HeraldAgent*
+    Open the prompt and run an agent task. With [task], skip the prompt.
+
+:HeraldStop                                                      *:HeraldStop*
+    Cancel every request in flight.
+
+:HeraldNewSession                                          *:HeraldNewSession*
+    Clear the current session. The next search or agent request starts a new
+    one.
+
+:HeraldSession {name}                                         *:HeraldSession*
+    Name the current session.
+
+:HeraldResume                                                  *:HeraldResume*
+    Pick a saved session with |vim.ui.select()|, most recent first. `*` marks
+    the current session.
+
+:HeraldSessionInfo                                        *:HeraldSessionInfo*
+    Show the current session's name, ID, and creation date.
+
+==============================================================================
+7. LUA API                                                        *herald-api*
+
+herald.setup({opts})                                          *herald.setup()*
+    Set options and load saved sessions. See |herald-config|.
+
+herald.visual()                                              *herald.visual()*
+    Open the prompt for the current visual selection.
+
+herald.search()                                              *herald.search()*
+    Same as |:HeraldSearch|.
+
+herald.agent()                                                *herald.agent()*
+    Same as |:HeraldAgent| without an argument.
+
+herald.stop()                                                  *herald.stop()*
+    Same as |:HeraldStop|.
+
+herald.new_session()                                    *herald.new_session()*
+    Same as |:HeraldNewSession|.
+
+herald.name_session({name})                            *herald.name_session()*
+    Same as |:HeraldSession|.
+
+herald.resume_session()                              *herald.resume_session()*
+    Same as |:HeraldResume|.
+
+herald.session_info()                                  *herald.session_info()*
+    Same as |:HeraldSessionInfo|.
+
+==============================================================================
+8. CONFIGURATION                                               *herald-config*
+
+Defaults: >lua
+
+  require("herald").setup({
+    model = "sonnet",
+    effort = nil,
+    permission_mode = "auto",
+    max_budget_usd = nil,
+    md_files = { "AGENT.md", "CLAUDE.md" },
+    system_prompt = nil,
+    visual = { bare = false },
+    completion = {
+      custom_rules = {},
+      global_rules = {},
+      files = { enabled = true },
+    },
+  })
+<
+model                                                    *herald-config-model*
+    string. Passed to `claude --model`. An alias (`sonnet`, `opus`, `haiku`)
+    or a full model name.
+
+effort                                                  *herald-config-effort*
+    string or nil. Passed to `claude --effort`: `low`, `medium`, `high`,
+    `xhigh`, or `max`. nil uses the CLI default.
+
+permission_mode                                *herald-config-permission_mode*
+    string. Passed to `claude --permission-mode` for agent tasks only:
+    `acceptEdits`, `auto`, `bypassPermissions`, `manual`, `dontAsk`, or
+    `plan`. The agent runs non-interactively and cannot ask you to approve a
+    tool.
+
+max_budget_usd                                  *herald-config-max_budget_usd*
+    number or nil. Passed to `claude --max-budget-usd` on every request.
+
+md_files                                              *herald-config-md_files*
+    string[]. File names to collect from the current file's directory and
+    each parent up to Neovim's working directory. Herald appends their
+    contents to the system prompt.
+
+system_prompt                                    *herald-config-system_prompt*
+    string or nil. Appended after Herald's own instructions through
+    `claude --append-system-prompt`.
+
+visual.bare                                        *herald-config-visual.bare*
+    boolean. Adds `claude --bare` to visual replace. Bare mode skips hooks,
+    plugins, and CLAUDE.md discovery, so replies come back sooner. It accepts
+    only `ANTHROPIC_API_KEY` authentication and ignores a Claude subscription
+    login.
+
+completion.custom_rules                    *herald-config-completion.custom_rules*
+    string[]. Project rule directories. A project rule overrides a global
+    rule with the same name.
+
+completion.global_rules                    *herald-config-completion.global_rules*
+    string[]. Global rule directories.
+
+completion.files.enabled                  *herald-config-completion.files.enabled*
+    boolean. Opens file completion when you type `@` in the prompt window.
+    `@path` references resolve either way.
+
+==============================================================================
+9. SESSIONS                                                  *herald-sessions*
+
+After each search or agent request, Herald stores the session ID that
+`claude` returns and passes it back with `--resume` on the next request.
+Herald saves sessions to `stdpath("data")/herald/sessions.json` after each
+request and when Neovim exits.
+
+==============================================================================
+10. RULES AND FILES                                        *herald-references*
+
+`#name` resolves to the first `<dir>/name/SKILL.md` found, checking
+`completion.custom_rules` before `completion.global_rules`. `@path` reads the
+file relative to Neovim's working directory, or from an absolute path.
+
+Herald removes each resolved token from the prompt and appends the rule or
+file contents. If a rule or file does not exist, the token stays in the
+prompt unchanged.
+
+ vim:tw=78:ts=8:ft=help:norl:

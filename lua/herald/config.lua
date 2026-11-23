@@ -5,7 +5,11 @@
 --- @field max_budget_usd number|nil
 --- @field md_files string[]
 --- @field system_prompt string|nil
+--- @field visual herald.VisualConfig
 --- @field completion herald.CompletionConfig
+
+--- @class herald.VisualConfig
+--- @field bare boolean
 
 --- @class herald.CompletionConfig
 --- @field custom_rules string[]
@@ -20,6 +24,11 @@ local defaults = {
   max_budget_usd = nil,
   md_files = { "AGENT.md", "CLAUDE.md" },
   system_prompt = nil,
+  visual = {
+    -- --bare skips hooks, plugins and CLAUDE.md discovery for faster replies,
+    -- but only accepts ANTHROPIC_API_KEY auth (no subscription login).
+    bare = false,
+  },
   completion = {
     custom_rules = {},
     global_rules = {},

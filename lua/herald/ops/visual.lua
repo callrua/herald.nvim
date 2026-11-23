@@ -1,4 +1,6 @@
 local cli = require("herald.cli")
+local parse = require("herald.parse")
+local config = require("herald.config")
 local prompt = require("herald.prompt")
 
 local M = {}
@@ -100,7 +102,7 @@ function M.run(user_prompt, buf, start_line, end_line, ns, mark_start, mark_end)
   local request_id = cli.run(full_prompt, {
     system_prompt = prompt.build_system_prompt("visual"),
     disallowed_tools = "Bash Edit Write Read Glob Grep",
-    bare = true,
+    bare = config.values.visual.bare,
     no_session = true,
   }, function(result)
     spinner.stop()
@@ -125,6 +127,7 @@ function M.run(user_prompt, buf, start_line, end_line, ns, mark_start, mark_end)
     local new_end_line = cur_end[1] + 1 -- 0-indexed, exclusive
 
     local replacement_lines = vim.split(result.text, "\n", { plain = true })
+    replacement_lines = parse.fix_first_indent(replacement_lines, lines[1])
     vim.api.nvim_buf_set_lines(buf, new_start_line, new_end_line, false, replacement_lines)
 
     local cost = result.cost_usd and string.format(" ($%.4f)", result.cost_usd) or ""

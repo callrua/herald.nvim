@@ -57,7 +57,16 @@ local comma_notes = parse.search_locations("/foo.go:1:1,3,Notes with, commas, in
 assert_eq("comma notes: count", #comma_notes, 1)
 assert_eq("comma notes: text", comma_notes[1].text, "Notes with, commas, inside")
 
+-- Test first-line indent fix for visual replies
+local fixed = parse.fix_first_indent({ " local x = 1", "    y()", "  end" }, "  local names = {}")
+assert_eq("indent: first line", fixed[1], "  local x = 1")
+assert_eq("indent: later lines untouched", fixed[2], "    y()")
+local unindented = parse.fix_first_indent({ "local x = 1" }, "\tfoo()")
+assert_eq("indent: tab", unindented[1], "\tlocal x = 1")
+assert_eq("indent: empty reply", #parse.fix_first_indent({}, "  x"), 0)
+
 print(string.format("\n%d passed, %d failed", passed, failed))
 if failed > 0 then
   vim.cmd("cquit 1")
 end
+os.exit(failed > 0 and 1 or 0)
